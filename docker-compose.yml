@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: analytics_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password_change_me}
+      MYSQL_DATABASE: cms_dev
+      MYSQL_USER: ems_app_user
+      MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD:-secure_app_password_change_me}
+    ports:
+      - "3308:3306"  # Using 3308 to avoid conflict with local MySQL
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./emsdb_backup.sql:/docker-entrypoint-initdb.d/01-emsdb_backup.sql:ro
+      - ./analytics_migration.sql:/docker-entrypoint-initdb.d/02-analytics_migration.sql:ro
+    command: 
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_password_change_me}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
+    driver: local
+

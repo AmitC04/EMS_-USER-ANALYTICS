@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Analytics Models (New Tables)
+// Based on: User Activity Analytics v1.1 Business Requirement Document
+// ============================================
+
+model user_activity {
+  activity_id   BigInt                    @id @default(autoincrement())
+  user_id       Int?
+  session_id    String                    @db.VarChar(100)
+  is_guest      Boolean                   @default(false)
+  event_type    user_activity_event_type
+  page_url      String?                   @db.VarChar(500)
+  referrer_url  String?                   @db.VarChar(500)
+  device_type   user_activity_device_type?
+  browser_name  String?                   @db.VarChar(100)
+  ip_address    String?                   @db.VarChar(50)
+  geo_country   String?                   @db.VarChar(100)
+  geo_city      String?                   @db.VarChar(100)
+  order_id      BigInt?
+  amount        Decimal?                  @db.Decimal(10, 2)
+  currency      String?                   @default("INR") @db.VarChar(10)
+  event_time    DateTime                  @default(now()) @db.DateTime(0)
+  metadata      Json?
+  created_at    DateTime                  @default(now()) @db.DateTime(0)
+  users         users?                    @relation(fields: [user_id], references: [user_id], onDelete: SetNull, onUpdate: Cascade, map: "fk_user_activity_user")
+
+  @@index([user_id], map: "idx_user_activity_user")
+  @@index([event_type], map: "idx_user_activity_event")
+  @@index([session_id], map: "idx_user_activity_session")
+  @@index([event_time], map: "idx_user_activity_time")
+  @@index([order_id], map: "idx_user_activity_order")
+  @@map("user_activity")
+}
+
+enum user_activity_event_type {
+  login_success
+  login_failed
+  logout
+  register_email
+  register_google
+  password_changed
+  password_reset_request
+  password_reset_success
+  session_start
+  session_end
+  page_view
+  add_to_cart
+  remove_from_cart
+  checkout_started
+  payment_initiated
+  payment_success
+  payment_failed
+  certification_view
+  practice_test_start
+  final_test_start
+  review_submitted
+  site_error
+
+  @@map("user_activity_event_type")
+}
+
+enum user_activity_device_type {
+  desktop
+  mobile
+  tablet
+
+  @@map("user_activity_device_type")
+}
+
+model user_sessions {
+  session_id    String                    @id @db.VarChar(100)
+  user_id       Int?
+  is_guest      Boolean                   @default(false)
+  auth_method   user_sessions_auth_method  @default(guest)
+  login_time    DateTime                  @default(now()) @db.DateTime(0)
+  logout_time   DateTime?                @db.DateTime(0)
+  last_seen_at  DateTime                  @default(now()) @db.DateTime(0)
+  ip_address    String?                   @db.VarChar(50)
+  geo_country   String?                   @db.VarChar(100)
+  geo_city      String?                   @db.VarChar(100)
+  created_at    DateTime                  @default(now()) @db.DateTime(0)
+  users         users?                    @relation(fields: [user_id], references: [user_id], onDelete: SetNull, onUpdate: Cascade, map: "fk_user_sessions_user")
+
+  @@index([logout_time, last_seen_at], map: "idx_user_sessions_active")
+  @@index([user_id], map: "idx_user_sessions_user")
+  @@index([login_time], map: "idx_user_sessions_login_time")
+  @@map("user_sessions")
+}
+
+enum user_sessions_auth_method {
+  email
+  google
+  guest
+
+  @@map("user_sessions_auth_method")
+}
+
+model user_audit_log {
+  audit_id      BigInt                    @id @default(autoincrement())
+  user_id       Int
+  action_type   user_audit_log_action_type
+  performed_by  Int?
+  ip_address    String?                   @db.VarChar(50)
+  old_value     Json?
+  new_value     Json?
+  created_at    DateTime                  @default(now()) @db.DateTime(0)
+  users         users                     @relation("UserAuditLog", fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade, map: "fk_audit_user")
+  performed_by_user users?                @relation("UserAuditPerformedBy", fields: [performed_by], references: [user_id], onDelete: SetNull, onUpdate: Cascade, map: "fk_audit_performed_by")
+
+  @@index([user_id], map: "idx_audit_user")
+  @@index([action_type], map: "idx_audit_action")
+  @@index([created_at], map: "idx_audit_created_at")
+  @@map("user_audit_log")
+}
+
+enum user_audit_log_action_type {
+  password_changed
+  profile_updated
+  email_changed
+  role_changed
+  account_locked
+  account_unlocked
+
+  @@map("user_audit_log_action_type")
+}
+
+// ============================================
+// Reference to existing users table
+// (Read-only usage - defined in EMS schema)
+// ============================================
+
+model users {
+  user_id                Int              @id
+  first_name             String           @db.VarChar(100)
+  last_name              String           @db.VarChar(100)
+  email                  String           @unique
+  auth_provider          users_auth_provider?
+  password_changed_at    DateTime?        @db.DateTime(0)
+  user_activity          user_activity[]
+  user_sessions          user_sessions[]
+  user_audit_log         user_audit_log[]      @relation("UserAuditLog")
+  user_audit_performed_by user_audit_log[]     @relation("UserAuditPerformedBy")
+
+  @@map("users")
+}
+
+enum users_auth_provider {
+  EMAIL
+  GOOGLE
+
+  @@map("users_auth_provider")
+}
