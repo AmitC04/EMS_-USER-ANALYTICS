@@ -484,25 +484,4 @@ For issues, questions, or contributions:
 * Contact the development team
 * Check the documentation
 
-## License
 
-[Add your license information here]
-
-## Changelog
-
-### Version 1.1
-* Initial release with core analytics features
-* Overview dashboard with key metrics
-* Conversion funnel analysis
-* User behavior tracking
-* Microsoft Clarity integration
-* Real-time session monitoring
-
-### Upcoming Features
-* Advanced segmentation and filtering
-* Custom event tracking builder
-* A/B testing framework
-* Export functionality (CSV, PDF)
-* Email reports and alerts
-* Multi-language support
-* Dark mode support
