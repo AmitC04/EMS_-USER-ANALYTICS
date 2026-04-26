@@ -7,7 +7,6 @@ A standalone analytics dashboard for tracking user activity, conversion funnels,
 This guide will walk you through the setup step-by-step.
 
 ## Project Structure
-
 ```
 ANALYTICS_DASHBOARD/
 ├── client/              # Next.js frontend (App Router)
